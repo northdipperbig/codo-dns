@@ -9,6 +9,8 @@ role   : Application
 import json
 from websdk.application import Application as myApplication
 from biz.handlers.domain_handler import domain_urls
+from biz.handlers.private_handler import private_urls
+from biz.handlers.domains_handler import domains_urls
 from models.domain import DNSDomainConf
 from websdk.db_context import DBContext
 
@@ -19,6 +21,8 @@ class Application(myApplication):
         self.region_init(**settings)
         urls = []
         urls.extend(domain_urls)
+        urls.extend(private_urls)
+        urls.extend(domains_urls)
         super(Application, self).__init__(urls, **settings)
 
     ### 初始化配置
