@@ -78,6 +78,7 @@ class DNSDomainProvider(Base):
     pro_api_token = Column('pro_api_token', String(255))
     pro_api_key = Column('pro_api_key', String(255)) #供应商API KEY或者API ID
     pro_api_secret = Column('pro_api_secret', String(255)) #供应商Secret KEY
+    pro_status = Column('pro_status', Integer, default=1) #账户状态，0 禁用， 1启用
     pro_remarks = Column('pro_remarks', String(255)) #描述信息
 
 class DNSDomainList(Base):

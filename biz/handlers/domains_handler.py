@@ -10,7 +10,7 @@ Desc    : 域名管理
 import json
 import re
 import tornado.web
-import time
+import time, datetime
 
 from sqlalchemy import or_
 from tornado import gen
@@ -20,6 +20,7 @@ from tornado.concurrent import run_on_executor
 from libs.base_handler import BaseHandler
 from libs.godaddy import main as godaddy_domain_update
 from libs.namecom import main as namecom_domain_update
+from libs.ssl import SslCertificate
 from websdk.base_handler import LivenessProbe
 from websdk.db_context import DBContext
 from models.domain import model_to_dict, DNSDomainProvider, DNSDomainList
@@ -163,6 +164,33 @@ class DomainsHandler(BaseHandler):
         
         return self.write(dict(code=-3, msg="参数不能为空"))
 
+class DomainsDetailHandler(BaseHandler):
+    def get(self, *args, **Kwargs):
+        thisday = datetime.datetime.now()
+        dname = self.get_argument('dname', default=None, strip=True)
+        if not dname:
+            return self.write(dict(code=-1, msg="参数错误"))
+        sslcert = SslCertificate()
+        with DBContext('r') as se:
+            domain_info = se.query(DNSDomainList).filter(DNSDomainList.domain_name == dname).first()
+            if not domain_info:
+                return self.write(dict(code=-2, msg="域名错误"))
+
+            domain_dict = model_to_dict(domain_info)
+            print(domain_dict)
+            sslcertexpirettime = sslcert.sslCertificateExpiredTime(domain_dict.get("domain_name"))
+            if sslcertexpirettime:
+                sslcertdatetime = datetime.datetime.strptime(sslcertexpirettime, r'%b %d %H:%M:%S %Y %Z')
+                domain_dict['ssl_cert_expired_days'] = (sslcertdatetime - thisday).days
+                domain_dict["ssl_cert_expired_time"] = str(sslcertdatetime)
+            else:
+                domain_dict['ssl_cert_expired_days'] = 0
+                domain_dict["ssl_cert_expired_time"] = "Not SSL Certificate info"
+            domain_dict['create_time'] = str(domain_dict.get('create_time'))
+            domain_dict['expired_time'] = str(domain_dict.get('expired_time'))
+        self.write(dict(code=0, msg='获取域名详情成功', data=domain_dict))
+
 domains_urls = [
-    (r"/v1/dns/domains/", DomainsHandler)
+    (r"/v1/dns/domains/", DomainsHandler),
+    (r"/v1/dns/domains/detail/", DomainsDetailHandler)
 ]

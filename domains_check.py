@@ -56,8 +56,8 @@ if __name__ == "__main__":
     TgBot = telegram.Bot(TgApiToken)
     
     #Update all domain list
-    #godaddy_domain_update()
-    #namecomd_domain_update()
+    godaddy_domain_update()
+    namecomd_domain_update()
 
     #Get domainlist
     with DBContext('r') as se:

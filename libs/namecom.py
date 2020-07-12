@@ -69,7 +69,7 @@ class NameDomains(NameComApi):
         today = datetime.now()
         domain_list = self.getdomainlist()
         if not domain_list or "message" in domain_list:
-            ins_log.read_log('error', '没有域名需要更新或者认证失败')
+            ins_log.read_log('error', '没有域名需要更新或者认证失败: {}'.format(domain_list))
             return False
         
         with DBContext('w') as se:
@@ -81,7 +81,7 @@ class NameDomains(NameComApi):
                 dautorenew = domain.get("autorenewEnabled", False)
                 dprovider = self.provider
 
-                is_exists = se.query(DNSDomainList).filter(DNSDomainList.domain_name == dname).first()
+                is_exists = se.query(DNSDomainList).filter(DNSDomainList.domain_name == dname, DNSDomainProvider.pro_status == dprovider).first()
                 if is_exists:
                     update_dict = {
                         DNSDomainList.domain_locked  : dlocked,
@@ -103,12 +103,12 @@ class NameDomains(NameComApi):
                     se.query(DNSDomainList).filter(DNSDomainList.domain_name == dname).update(update_dict)
                 else:
                     if dctime == 'Null':
-                        dctime = today.strftime("%Y-%m-%dT%H:%M:%SZ")
+                        dctime = today.strftime("%Y-%m-%dT%H:%M:%S")
                     else:
                         dctime = datetime.fromisoformat(dctime[:-1])
 
                     if detime == "Null":
-                        detime = today.replace(year=today.year+1).strftime("%Y-%m-%dT%H:%M:%SZ")
+                        detime = today.replace(year=today.year+1).strftime("%Y-%m-%dT%H:%M:%S")
                     else:
                         detime = datetime.fromisoformat(detime[:-1])
                     se.add(DNSDomainList(
@@ -127,7 +127,7 @@ def getproviderlist():
     """
     provider_list = []
     with DBContext('r') as se:
-        provider_info = se.query(DNSDomainProvider).filter(DNSDomainProvider.pro_platform == 'name').all()
+        provider_info = se.query(DNSDomainProvider).filter(DNSDomainProvider.pro_platform == 'name', DNSDomainProvider.pro_status).all()
         for provider in provider_info:
             data_dict = model_to_dict(provider)
             provider_list.append(data_dict)
